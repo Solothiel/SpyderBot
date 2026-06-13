@@ -1,71 +1,77 @@
+import os
+import urllib.parse
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
-
-''' creates a class (blueprint for creating object) and then initializes 
-    an instance variable to keep track of visited URLs
-'''
 
 class WebCrawler:
-    def __init__(self):
-        self.visited_urls = set()
+    def __init__(self, base_url, max_depth):
+        self.base_url = base_url
+        self.max_depth = max_depth
+        self.visited = set()
 
+        # Define file types you want to automatically download
+        self.file_extensions = (
+            '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+            '.zip', '.rar', '.7z', '.tar', '.gz',
+            '.png', '.jpg', '.jpeg', '.gif', '.mp3', '.mp4', '.csv'
+        )
 
-    """ This uses urlparse to split the URL into components, then ensures 
-    the crawler follows link on the target domain, ignores external sites,
-    ignores non-web links and ignores relative urls that aren't converted
-    """
-    def is_valid_url(self, url, base_domain):
-        parsed = urlparse(url)
-        return bool(parsed.netloc) and parsed.netloc == base_domain and parsed.scheme in ("http", "https")
+        # Target path: User's system Downloads folder / Spyderbot_treasure
+        self.download_dir = os.path.join(os.path.expanduser("~"), "Downloads", "Spyderbot_treasure")
+        os.makedirs(self.download_dir, exist_ok=True)
 
-    """ This is the webcrawler → it starts crawling on the given url.
-        The greats an empty list to store data. Then it creates a queue
-        containing the first URL to vist. This also helps prevents from revisting
-        the same page, while presenting as a browser running on windows"""
-    def crawl(self, start_url):
-        results = []
-        queue = [start_url]
-        base_domain = urlparse(start_url).netloc
-        self.visited_urls.add(start_url)
+    def is_file_url(self, url):
+        """Checks if the clean path of the URL ends with a target file extension."""
+        parsed = urllib.parse.urlparse(url)
+        path = parsed.path.lower()
+        return path.endswith(self.file_extensions)
 
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64"}
+    def download_file(self, url, log_callback):
+        """Downloads the file securely to the local treasure folder."""
+        try:
+            parsed = urllib.parse.urlparse(url)
+            filename = os.path.basename(parsed.path)
 
+            # Fallback if filename cannot be cleanly parsed from the URL
+            if not filename:
+                filename = "downloaded_asset_" + str(hash(url))
 
-        ''' removes and returns the first url in the queue, then sends updates as it 
-        crawls '''
-        while queue:
-            current_url = queue.pop(0)
-            yield {'type': 'status', 'message': f'Crawling: {current_url}'}
+            local_filepath = os.path.join(self.download_dir, filename)
 
-            try:
-                '''Makes a requests, waits at most 5 seconds, then  if it succeeds, 
-                    adds the crawled page to the results list'''
-
-                response = requests.get(current_url, headers=headers, timeout=5)
+            # Download file using stream to handle larger files efficiently
+            with requests.get(url, stream=True, timeout=10) as response:
                 if response.status_code == 200:
-                    results.append(current_url)
-                    soup = BeautifulSoup(response.content, "html.parser")
+                    with open(local_filepath, 'wb') as f:
+                        for chunk in response.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                    log_callback(f"   📥 [DOWNLOADED] -> {filename}")
+                    return True
+        except Exception as e:
+            log_callback(f"   ❌ [DOWNLOAD ERROR] -> Failed to grab file: {str(e)}")
+        return False
 
-                    for a_tag in soup.find_all('a', href=True):
-                        full_url = urljoin(current_url, a_tag['href'])
-                        full_url = full_url.split('#')[0]
+    def get_links(self, url):
+        """Fetches HTML pages and parses links while skipping file URLs."""
+        links = set()
 
+        # If the URL itself is a file, we do not parse it for HTML elements
+        if self.is_file_url(url):
+            return links
 
-                        if full_url not in self.visited_urls and self.is_valid_url(full_url, base_domain):
-                            self.visited_urls.add(full_url)
-                            queue.append(full_url)
-                            yield {'type': 'found', 'url': full_url}
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code != 200 or "text/html" not in response.headers.get("Content-Type", ""):
+                return links
 
+            soup = BeautifulSoup(response.text, 'html.parser')
+            for anchor in soup.find_all('a', href=True):
+                href = anchor['href']
+                absolute_url = urllib.parse.urljoin(url, href)
 
-                '''Catches any problem such as connection failures, timeout, invalid urls,
-                    DNS errors and reports the error'''
+                parsed_url = urllib.parse.urlparse(absolute_url)
+                clean_url = f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
-            except Exception as e:
-                yield {'type': 'error', 'message': f'failed {current_url}: {str(e)}'}
-                continue
-
-        yield   {'type': 'finished', 'urls': results}   #reports when crawler is done.
-
-
-
+                if urllib.parse.urlparse(self.base_url).netloc == parsed_url.netloc:
+                    links.add(clean_url)
+        except Exception:
+            pass
