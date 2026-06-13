@@ -37,40 +37,32 @@ class CrawlerApp:
         total_discovered = 1
         processed_count = 0
 
-        self.gui.log(f"[STORAGE DIRECTORY] Files will dump to: {crawler.download_dir}\n")
+        self.gui.log(f"[STORAGE DIRECTORY] Live Target Path: {crawler.download_dir}\n")
 
         while queue:
             current_url, current_depth = queue.pop(0)
             processed_count += 1
 
-            # Step A: Identify if URL is a direct file download link
-            if crawler.is_file_url(current_url):
-                self.gui.log(f"[Scraping Matrix T-{current_depth}] Extracting File Stream...")
-                crawler.download_file(current_url, self.gui.log)
-                self.gui.update_progress(processed_count, total_discovered)
-                continue
-
-            # Step B: Standard webpage HTML link extraction parsing loop
-            self.gui.log(f"[Scraping Matrix T-{current_depth}] Extracting HTML Page: {current_url}")
+            self.gui.log(f"[Analyzing Node T-{current_depth}] -> {current_url}")
             self.gui.update_progress(processed_count, total_discovered)
 
+            # Execute the smart header processor check
+            success, discovered_links = crawler.process_url(current_url, self.gui.log)
+
+            # Do not scrape child elements if depth limit is reached
             if current_depth >= max_depth:
                 continue
 
-            new_links = crawler.get_links(current_url)
-            for link in new_links:
-                if link not in crawler.visited:
-                    crawler.visited.add(link)
-                    queue.append((link, current_depth + 1))
-                    total_discovered += 1
-
-                    if crawler.is_file_url(link):
-                        self.gui.log(f"   + 📄 [Found File Asset]: {link}")
-                    else:
-                        self.gui.log(f"   + [Found Web Link]: {link}")
+            if success and discovered_links:
+                for link in discovered_links:
+                    if link not in crawler.visited:
+                        crawler.visited.add(link)
+                        queue.append((link, current_depth + 1))
+                        total_discovered += 1
+                        self.gui.log(f"   + [Discovered Node]: {link}")
 
         self.gui.update_progress(processed_count, total_discovered)
-        self.gui.status_label.config(text=f"Task ended. Found {len(crawler.visited)} domain nodes mapped successfully.")
+        self.gui.status_label.config(text=f"Task ended. Engine processed all discovered nodes.")
         self.gui.log("\n[PROCESS COMPLETE] Engine operational tracking safely shutdown.")
         self.gui.start_button.config(state=tk.NORMAL)
 
