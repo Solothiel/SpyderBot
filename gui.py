@@ -2,7 +2,7 @@ import os
 import sys
 import tkinter as tk
 import ttkbootstrap as tb
-from ttkbootstrap.scrolled import ScrolledText
+from ttkbootstrap.widgets import Scrolled
 from PIL import Image, ImageTk
 
 def resource_path(relative_path):
