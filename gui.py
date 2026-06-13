@@ -19,7 +19,7 @@ class CrawlerGUI:
         self.root = root
         self.start_callback = start_callback
 
-        self.root.title("☾ Moon Knight Web Crawler ☽")
+        self.root.title("☾ Solothiel's Web Crawler ☽")
         self.root.geometry("750x600")
         self.root.minsize(700, 550)
 
@@ -54,7 +54,7 @@ class CrawlerGUI:
 
         header_title = tb.Label(
             header_frame,
-            text="☾ MOON KNIGHT WEB CRAWLER ☽",
+            text="☾ Solothiel's WEB CRAWLER ☽",
             font=("Segoe UI", 16, "bold"),
             foreground="#FFFFFF",
             background="#0A0A0A"
