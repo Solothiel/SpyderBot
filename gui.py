@@ -28,12 +28,12 @@ class CrawlerGUI:
     def create_widgets(self):
 
         # =========================
-        # HEADER (MOON KNIGHT BANNER)
+        # HEADER ( BANNER)
         # =========================
         header_frame = tb.Frame(self.root, padding=10)
         header_frame.pack(fill=tk.X)
 
-        # Moon Knight logo (UPDATED)
+        #  logo (UPDATED)
         try:
             logo_img_path = resource_path("assets/moon_logo.png")
             opened_logo = Image.open(logo_img_path)
