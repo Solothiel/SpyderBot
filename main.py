@@ -143,7 +143,7 @@ if __name__ == "__main__":
     )
 
     root.title(
-        "☾ Moon Knight Web Crawler ☽"
+        "☾ Solothiel's Web Crawler ☽"
     )
 
     root.geometry(
