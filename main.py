@@ -25,7 +25,7 @@ class CrawlerApp:
     def __init__(self, root):
         self.root = root
 
-        # Moon Knight logo path
+        #  logo path
         self.logo_path = resource_path("assets/moon_logo.png")
 
         self.gui = CrawlerGUI(
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     style = tb.Style()
 
-    # Moon Knight colors
+    # colors
     root.configure(
         bg="#0A0A0A"
     )
