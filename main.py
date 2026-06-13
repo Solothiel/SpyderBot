@@ -49,11 +49,12 @@ class CrawlerApp:
             # Execute the smart header processor check
             success, discovered_links = crawler.process_url(current_url, self.gui.log)
 
-            # Do not scrape child elements if depth limit is reached
+            # Do not scrape child links if current depth boundary limit is reached
             if current_depth >= max_depth:
                 continue
 
-            if success and discovered_links:
+            # FIXED: Safe iteration validation to prevent TypeErrors if discovered_links is empty
+            if success and discovered_links is not None:
                 for link in discovered_links:
                     if link not in crawler.visited:
                         crawler.visited.add(link)
@@ -68,7 +69,7 @@ class CrawlerApp:
 
 
 if __name__ == "__main__":
+    # Design Styles Palette: Try replacing "vapor" below with "solar" or "cyborg"
     root = tb.Window(themename="vapor")
     app = CrawlerApp(root)
     root.mainloop()
-
