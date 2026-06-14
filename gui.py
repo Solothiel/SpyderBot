@@ -6,11 +6,7 @@ from PIL import Image, ImageTk
 
 
 def resource_path(relative_path):
-    """Safely locates assets for normal run + PyInstaller."""
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
+    base_path = getattr(sys, "_MEIPASS", os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
 
